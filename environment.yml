@@ -1,0 +1,12 @@
+dependencies:
+  - cwl-wrapper >= 0.10.0
+  - pycalrissian
+  - pip
+  - pip:
+    - kubernetes
+    - pdocs
+    - cwl-utils
+    - mkdocs-material
+    - mkdocs-jupyter
+    - pdocs
+  - loguru
