@@ -1,0 +1,125 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "zoo_calrissian_runner"
+dynamic = ["version"]
+description = 'Python library for bridging zoo execution context and calrissian'
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache License (2.0)"}
+keywords = []
+authors = [
+  { name = "Fabrice Brito", email = "fabrice.brito@terradue.com" }
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+dependencies = [
+    "pycalrissian",
+    "cwl-wrapper",
+    "cwl-utils",
+    "attrs",
+    "loguru",
+    "setuptools==70.0.0",
+    "kubernetes==28.1.0",
+    "cwltool==3.1.20240708091337",
+    "zoo-framework"
+]
+
+[project.urls]
+Documentation = "https://github.com/EOEPCA/zoo-calrissian-runner#readme"
+Issues = "https://github.com/EOEPCA/zoo-calrissian-runner/issues"
+Source = "https://github.com/EOEPCA/zoo-calrissian-runner"
+
+[tool.hatch.version]
+path = "zoo_calrissian_runner/__about__.py"
+
+
+[tool.coverage.run]
+source_pkgs = ["zoo_calrissian_runner", "tests"]
+branch = true
+parallel = true
+omit = [
+  "zoo_calrissian_runner/__about__.py",
+]
+
+[tool.coverage.paths]
+zoo_calrissian_runner = ["zoo_calrissian_runner"]
+tests = ["tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[tool.hatch.envs.default.env-vars]
+PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"
+
+[tool.hatch.envs.default]
+skip-install = false
+dependencies = [
+    "pycalrissian",
+    "cwl-wrapper",
+    "cwl-utils",
+    "attrs",
+    "loguru",
+    "setuptools==70.0.0",
+    "kubernetes==28.1.0",
+    "cwltool==3.1.20240708091337",
+    "zoo-framework"
+]
+
+
+[tool.hatch.envs.test]
+skip-install = false
+
+dependencies = [
+    "nose2",
+    "coverage",
+    "pycalrissian",
+    "cwl-wrapper",
+    "cwl-utils",
+    "attrs",
+    "loguru",
+    "setuptools==70.0.0",
+    "kubernetes==28.1.0",
+    "cwltool==3.1.20240708091337",
+    "zoo-framework"
+]
+
+[tool.hatch.envs.test.env-vars]
+RETRY_ATTEMPTS="0"
+
+[tool.hatch.envs.test.scripts]
+test = "hatch run nose2"
+testv = "hatch run nose2 --verbose"
+cov = ["coverage run --source=zoo_calrissian_runner -m nose2", "coverage report"]
+
+[[tool.hatch.envs.test.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+[tool.hatch.envs.docs]
+skip-install = false
+
+dependencies = [
+  "pdocs",
+  "mkdocs-material",
+  "mkdocs-jupyter"
+]
+
+[tool.hatch.envs.docs.scripts]
+serve = "mkdocs serve"
+deploy = "mkdocs gh-deploy --force"
