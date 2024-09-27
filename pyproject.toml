@@ -97,7 +97,8 @@ dependencies = [
     "setuptools==70.0.0",
     "kubernetes==28.1.0",
     "cwltool==3.1.20240708091337",
-    "zoo-framework"
+    "zoo-framework",
+    "python-dotenv"
 ]
 
 [tool.hatch.envs.test.env-vars]
