@@ -101,6 +101,7 @@ dependencies = [
 ]
 
 [tool.hatch.envs.test.env-vars]
+PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"
 RETRY_ATTEMPTS="0"
 
 [tool.hatch.envs.test.scripts]
