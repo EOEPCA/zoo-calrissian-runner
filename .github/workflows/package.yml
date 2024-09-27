@@ -32,6 +32,7 @@ jobs:
     - name: Test package
       run: hatch -e test run nose2 --verbose
     - name: Publish package distributions to Test PyPI
+      if: github.ref != 'refs/heads/main'
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         skip-existing: true
