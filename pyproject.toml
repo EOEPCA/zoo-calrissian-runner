@@ -7,7 +7,7 @@ name = "zoo_calrissian_runner"
 dynamic = ["version"]
 description = 'Python library for bridging zoo execution context and calrissian'
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "Apache License (2.0)"}
 keywords = []
 authors = [
@@ -16,8 +16,6 @@ authors = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -111,7 +109,7 @@ testv = "hatch run nose2 --verbose"
 cov = ["coverage run --source=zoo_calrissian_runner -m nose2", "coverage report"]
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+python = ["3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.docs]
 skip-install = false
