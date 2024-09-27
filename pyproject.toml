@@ -83,9 +83,6 @@ dependencies = [
 
 [tool.hatch.envs.test]
 skip-install = false
-omit = [
-    "tests/test_dnbr_service.py"
-]
 
 dependencies = [
     "nose2",
