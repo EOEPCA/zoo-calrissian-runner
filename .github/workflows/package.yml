@@ -39,7 +39,7 @@ jobs:
       with:
         skip-existing: true
         repository-url: https://test.pypi.org/legacy/
-      - name: Publish package distributions to PyPI
+    - name: Publish package distributions to PyPI
       if: github.ref == 'refs/heads/main'
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
