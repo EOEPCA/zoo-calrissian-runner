@@ -1,10 +1,10 @@
 # Introduction
 
-[ZOO Calrissian Runner](http://www.zoo-project.org/) provides a bridge between the ZOO Project and Calrissian using [pycalrissian](https://github.com/Terradue/pycalrissian/).
+`ZOO Calrissian Runner` provides a bridge between the [ZOO Project](http://www.zoo-project.org/) and [Calrissian](https://github.com/Duke-GCB/calrissian) using [pycalrissian](https://github.com/Terradue/pycalrissian/).
 
-The goal is to ease the development of runners for the EOEPCA ADES Zoo implementation.
+The goal is to ease the development of runners that implement a business logic for the EOEPCA ADES Zoo implementation.
 
-A runner provides an execution engine for Zoo.
+A runner provides an execution engine for Zoo. This repository and documentation provides a runner for Kubernetes using [Calrissian](https://github.com/Duke-GCB/calrissian).
 
 Below an overview of the building block
 

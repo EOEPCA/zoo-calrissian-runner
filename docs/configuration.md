@@ -7,6 +7,10 @@
 * `STORAGE_CLASS`: defines the k8s RWX storage class for Calrissian. Defaults to `longhorn`
 * `KEEP_SESSION`: if set to `true`, the session and thus the kubernetes namespace is not deleted
 
+### Calrissian resources
+
+* `SCATTER_MULTIPLIER`: scatter factor multiplier. Defaults to `2`.
+
 ### CWL Wrapper
 
 The cwl-wrapper templates can be customized with the environment variables:

@@ -1,7 +1,7 @@
 $graph:
   - baseCommand: burned-area
     class: CommandLineTool
-    id: clt
+    id: main
     inputs:
       pre_event:
         inputBinding:
@@ -71,7 +71,7 @@ $graph:
           ndwi_threshold: ndwi_threshold
         out:
           - results
-        run: '#clt'
+        run: '#main'
 $namespaces:
   s: https://schema.org/
 s:softwareVersion: 1.0

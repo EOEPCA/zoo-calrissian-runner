@@ -1,5 +1,6 @@
 import inspect
 import os
+import sys
 import uuid
 from datetime import datetime
 from typing import Union
@@ -12,6 +13,7 @@ from loguru import logger
 from pycalrissian.context import CalrissianContext
 from pycalrissian.execution import CalrissianExecution
 from pycalrissian.job import CalrissianJob
+from pycalrissian.utils import copy_to_volume
 
 from zoo_calrissian_runner.handlers import ExecutionHandler
 
@@ -103,21 +105,25 @@ class Workflow:
         Returns:
             cwl_utils.parser.cwl_v1_2.ResourceRequirement or ResourceRequirement
         """
-        resource_requirement = [
-            requirement
-            for requirement in elem.requirements
-            if isinstance(
-                requirement,
-                (
-                    cwl_utils.parser.cwl_v1_0.ResourceRequirement,
-                    cwl_utils.parser.cwl_v1_1.ResourceRequirement,
-                    cwl_utils.parser.cwl_v1_2.ResourceRequirement,
-                ),
-            )
-        ]
+        resource_requirement = []
+        
+        # look for requirements
+        if elem.requirements is not None:
+            resource_requirement = [
+                requirement
+                for requirement in elem.requirements
+                if isinstance(
+                    requirement,
+                    (
+                        cwl_utils.parser.cwl_v1_0.ResourceRequirement,
+                        cwl_utils.parser.cwl_v1_1.ResourceRequirement,
+                        cwl_utils.parser.cwl_v1_2.ResourceRequirement,
+                    ),
+                )
+            ]
 
-        if len(resource_requirement) == 1:
-            return resource_requirement[0]
+            if len(resource_requirement) == 1:
+                return resource_requirement[0]
 
         # look for hints
         if elem.hints is not None:
@@ -127,8 +133,8 @@ class Workflow:
                 if hint["class"] == "ResourceRequirement"
             ]
 
-        if len(resource_requirement) == 1:
-            return resource_requirement[0]
+            if len(resource_requirement) == 1:
+                return resource_requirement[0]
 
     def eval_resource(self):
         resources = {
@@ -168,7 +174,7 @@ class Workflow:
                     if resource_requirement := self.get_resource_requirement(
                         self.get_object_by_id(step.run[1:])
                     ):
-                        multiplier = 2 if step.scatter else 1
+                        multiplier = int(os.getenv("SCATTER_MULTIPLIER", 2)) if step.scatter else 1
                         for resource_type in [
                             "coresMin",
                             "coresMax",
@@ -216,12 +222,53 @@ class ZooInputs:
 
     def get_processing_parameters(self):
         """Returns a list with the input parameters keys"""
-        return {key: value["value"] for key, value in self.inputs.items()}
+        res={}
+        hasVal=False;
+        for key, value in self.inputs.items():
+            if "dataType" in value:
+                if isinstance(value["dataType"],list):
+                    # How should we pass array for an input?
+                    import json
+                    res[key]=value["value"]
+                else:
+                    if value["dataType"] in ["double","float"]:
+                        res[key]=float(value["value"])
+                    elif value["dataType"] == "integer":
+                        res[key]=int(value["value"])
+                    elif value["dataType"] == "boolean":
+                        res[key]=int(value["value"])
+                    else:
+                        res[key]=value["value"]
+            else:
+                if "cache_file" in value:
+                    if "mimeType" in value:
+                        res[key]={
+                            "class": "File",
+                            "path": value["cache_file"],
+                            "format": value["mimeType"]
+                        }
+                    else:
+                        res[key]={
+                            "class": "File",
+                            "path": value["cache_file"],
+                            "format": "text/plain"
+                        }
+                else:
+                    res[key]=value["value"]
+        return res 
 
 
 class ZooOutputs:
     def __init__(self, outputs):
         self.outputs = outputs
+        # decuce the output key
+        output_keys = list(self.outputs.keys())
+        if len(output_keys) > 0:
+            self.output_key = output_keys[0]
+        else:
+            self.output_key = "stac"
+            if "stac" not in self.outputs.keys():
+                self.outputs["stac"] = {}
 
     def get_output_parameters(self):
         """Returns a list with the output parameters keys"""
@@ -229,10 +276,7 @@ class ZooOutputs:
 
     def set_output(self, value):
         """set the output result value"""
-        if "stac" in self.outputs.keys():
-            self.outputs["stac"]["value"] = value
-        else:
-            self.outputs["stac"] = {"value": value}
+        self.outputs[self.output_key]["value"] = value
 
 
 class ZooCalrissianRunner:
@@ -253,7 +297,14 @@ class ZooCalrissianRunner:
 
         self.storage_class = os.environ.get("STORAGE_CLASS", "openebs-nfs-test")
         self.monitor_interval = 30
-        self._namespace_name = None
+        if "lenv" in self.zoo_conf.conf and "usid" in self.zoo_conf.conf["lenv"]:
+            uuidString=self.zoo_conf.conf['lenv']['usid']
+            self._namespace_name = self.shorten_namespace(
+                f"{str(self.zoo_conf.workflow_id).replace('_', '-')}-"
+                f"{uuidString}"
+            )
+        else:
+            self._namespace_name = None
 
     @staticmethod
     def shorten_namespace(value: str) -> str:
@@ -340,8 +391,8 @@ class ZooCalrissianRunner:
             for elem in self.get_workflow_inputs(mandatory=True)
         )
 
-    def execute(self):
-        self.update_status(progress=97, message="Pre-execution hook")
+    def execute(self, wall_time=None):
+        self.update_status(progress=2, message="Pre-execution hook")
         self.handler.pre_execution_hook()
 
         if not (self.assert_parameters()):
@@ -381,6 +432,32 @@ class ZooCalrissianRunner:
             **self.handler.get_additional_parameters(),
         }
 
+
+        self.update_status(progress=20, message="upload required files")
+
+
+        # Upload input complex data into calrissian_wdir
+        for i in processing_parameters:
+            if isinstance(processing_parameters[i],dict):
+                if processing_parameters[i]["class"]=="File":
+                    copy_to_volume(
+                        context=session,
+                        volume={
+                            "name": session.calrissian_wdir,
+                            "persistentVolumeClaim": {
+                                "claimName": session.calrissian_wdir
+                            }
+                        },
+                        volume_mount={
+                            "name": session.calrissian_wdir,
+                            "mountPath": "/calrissian",
+                        },
+                        source_paths=[
+                            processing_parameters[i]["path"]
+                        ],
+                        destination_path="/calrissian",
+                    )
+                    processing_parameters[i]["path"]=processing_parameters[i]["path"].replace(self.zoo_conf.conf["main"]["tmpPath"],"/calrissian")
         # checks if all parameters where provided
 
         logger.info("create Calrissian job")
@@ -398,18 +475,18 @@ class ZooCalrissianRunner:
             tool_logs=True,
         )
 
-        self.update_status(progress=20, message="execution submitted")
+        self.update_status(progress=23, message="execution submitted")
 
         logger.info("execution")
-        execution = CalrissianExecution(job=job, runtime_context=session)
-        execution.submit()
+        self.execution = CalrissianExecution(job=job, runtime_context=session)
+        self.execution.submit()
 
-        execution.monitor(interval=self.monitor_interval)
+        self.execution.monitor(interval=self.monitor_interval, wall_time=wall_time)
 
-        if execution.is_complete():
+        if self.execution.is_complete():
             logger.info("execution complete")
 
-        if execution.is_succeeded():
+        if self.execution.is_succeeded():
             exit_value = zoo.SERVICE_SUCCEEDED
         else:
             exit_value = zoo.SERVICE_FAILED
@@ -417,18 +494,27 @@ class ZooCalrissianRunner:
         self.update_status(progress=90, message="delivering outputs, logs and usage report")
 
         logger.info("handle outputs execution logs")
-        output = execution.get_output()
+        output = self.execution.get_output()
+        log = self.execution.get_log()
+        usage_report = self.execution.get_usage_report()
+        tool_logs = self.execution.get_tool_logs()
+
         self.outputs.set_output(output)
 
         self.handler.handle_outputs(
-            log=execution.get_log(),
+            log=log,
             output=output,
-            usage_report=execution.get_usage_report(),
-            tool_logs=execution.get_tool_logs(),
+            usage_report=usage_report,
+            tool_logs=tool_logs,
         )
 
         self.update_status(progress=97, message="Post-execution hook")
-        self.handler.post_execution_hook()
+        self.handler.post_execution_hook(
+            log=log,
+            output=output,
+            usage_report=usage_report,
+            tool_logs=tool_logs,
+        )
 
         self.update_status(progress=99, message="clean-up processing resources")
 
@@ -452,10 +538,10 @@ class ZooCalrissianRunner:
         wf = Parser(
             cwl=self.cwl.raw_cwl,
             output=None,
-            stagein=os.environ.get("WRAPPER_STAGE_IN", "/assets/stagein.yaml"),
-            stageout=os.environ.get("WRAPPER_STAGE_OUT", "/assets/stageout.yaml"),
-            maincwl=os.environ.get("WRAPPER_MAIN", "/assets/maincwl.yaml"),
-            rulez=os.environ.get("WRAPPER_RULES", "/assets/rules.yaml"),
+            stagein=os.environ.get("WRAPPER_STAGE_IN", "assets/stagein.yaml"),
+            stageout=os.environ.get("WRAPPER_STAGE_OUT", "assets/stageout.yaml"),
+            maincwl=os.environ.get("WRAPPER_MAIN", "assets/maincwl.yaml"),
+            rulez=os.environ.get("WRAPPER_RULES", "assets/rules.yaml"),
             assets=None,
             workflow_id=workflow_id,
         )

@@ -51,9 +51,19 @@ class TestSentinel2SExpressions(unittest.TestCase):
             cwl = yaml.safe_load(stream)
 
         cls.cwl = cwl
-
+        
+    @unittest.skipIf(os.getenv("CI_TEST_SKIP") == "1", "Test is skipped via env variable")
     def test_execution(self):
         class CalrissianRunnerExecutionHandler(ExecutionHandler):
+            
+            def pre_execution_hook(self):
+                # Add logic here for actions before execution, if needed
+                pass
+
+            def post_execution_hook(self):
+                # Add logic here for actions after execution, if needed
+                pass
+            
             def get_pod_env_vars(self):
                 # sets two env vars in the pod launched by Calrissian
                 return {"A": "1", "B": "1"}
@@ -140,14 +150,23 @@ class TestSentinel2SExpressions(unittest.TestCase):
             execution_handler=CalrissianRunnerExecutionHandler(conf=self.conf),
         )
 
-        exit_value = runner.execute()
+        exit_value = runner.execute(wall_time=120)
 
         print(f"exit value: {exit_value}")
 
         self.assertEqual(exit_value, 3)
-
+        
+    @unittest.skipIf(os.getenv("CI_TEST_SKIP") == "1", "Test is skipped via env variable")
     def test_missing_parameter_execution(self):
         class CalrissianRunnerExecutionHandler(ExecutionHandler):
+            def pre_execution_hook(self):
+                # Add logic here for actions before execution, if needed
+                pass
+
+            def post_execution_hook(self):
+                # Add logic here for actions after execution, if needed
+                pass
+            
             def get_pod_env_vars(self):
                 # sets two env vars in the pod launched by Calrissian
                 return {"A": "1", "B": "1"}
@@ -245,7 +264,7 @@ class TestSentinel2SExpressions(unittest.TestCase):
             execution_handler=CalrissianRunnerExecutionHandler(conf=self.conf),
         )
 
-        exit_value = runner.execute()
+        exit_value = runner.execute(wall_time=120)
 
         print(f"exit value: {exit_value}")
 

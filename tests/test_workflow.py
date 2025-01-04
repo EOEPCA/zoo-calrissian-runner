@@ -17,25 +17,25 @@ class TestWorkflow(unittest.TestCase):
             os.path.join("tests", "app-packages", "app-package-1.cwl"),
             "r",
         ) as stream:
-            cls.reference_wf1 = {"cwl": yaml.safe_load(stream), "workflow_id": "dnbr"}
+            cls.reference_wf1 = {"cwl": yaml.safe_load(stream), "workflow_id": "main"}
 
         with open(
             os.path.join("tests", "app-packages", "app-package-2.cwl"),
             "r",
         ) as stream:
-            cls.reference_wf2 = {"cwl": yaml.safe_load(stream), "workflow_id": "dnbr"}
+            cls.reference_wf2 = {"cwl": yaml.safe_load(stream), "workflow_id": "main"}
 
         with open(
             os.path.join("tests", "app-packages", "app-package-3.cwl"),
             "r",
         ) as stream:
-            cls.reference_wf3 = {"cwl": yaml.safe_load(stream), "workflow_id": "dnbr"}
+            cls.reference_wf3 = {"cwl": yaml.safe_load(stream), "workflow_id": "main"}
 
         with open(
             os.path.join("tests", "app-packages", "app-package-4.cwl"),
             "r",
         ) as stream:
-            cls.reference_wf4 = {"cwl": yaml.safe_load(stream), "workflow_id": "dnbr"}
+            cls.reference_wf4 = {"cwl": yaml.safe_load(stream), "workflow_id": "main"}
 
     def test_object_creation(self):
         workflow = Workflow(cwl=self.reference_wf1["cwl"], workflow_id=self.reference_wf1["workflow_id"])
@@ -52,14 +52,14 @@ class TestWorkflow(unittest.TestCase):
 
         self.assertDictEqual(
             {
-                "coresMin": [3],
+                "coresMin": [3, 3],
                 "coresMax": [],
-                "ramMin": [10240],
+                "ramMin": [10240, 10240],
                 "ramMax": [],
-                "outdirMin": [10000],
+                "outdirMin": [10000, 10000],
                 "outdirMax": [],
                 "tmpdirMax": [],
-                "tmpdirMin": [10000],
+                "tmpdirMin": [10000, 10000],
             },
             workflow.eval_resource(),
         )
@@ -69,9 +69,9 @@ class TestWorkflow(unittest.TestCase):
 
         self.assertDictEqual(
             {
-                "coresMin": [3],
+                "coresMin": [3, 3],
                 "coresMax": [],
-                "ramMin": [10240],
+                "ramMin": [10240, 10240],
                 "ramMax": [],
                 "outdirMin": [],
                 "outdirMax": [],
@@ -86,10 +86,9 @@ class TestWorkflow(unittest.TestCase):
 
         self.assertDictEqual(
             {
-                "coresMin": [3, 3, 6, 3, 3, 3, 3, 6, 6],
+                "coresMin": [3, 6, 3, 3, 3, 3, 6, 6],
                 "coresMax": [],
                 "ramMin": [
-                    10240,
                     10240,
                     20480,
                     10240,

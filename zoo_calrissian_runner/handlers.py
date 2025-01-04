@@ -10,11 +10,11 @@ class ExecutionHandler(ABC):
         self.job_id = job_id
 
     @abstractmethod
-    def pre_execution_hook(self):
+    def pre_execution_hook(self, **kwargs):
         pass
 
     @abstractmethod
-    def post_execution_hook(self):
+    def post_execution_hook(self, **kwargs):
         pass
 
     @abstractmethod

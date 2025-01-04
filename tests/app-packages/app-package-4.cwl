@@ -2,7 +2,7 @@ $graph:
   - class: Workflow
     label: dNBR - produce the delta normalized difference between NIR and SWIR 22 over a pair of stac items
     doc: dNBR - produce the delta normalized difference between NIR and SWIR 22 over a pair of stac items
-    id: dnbr
+    id: main
     requirements:
       ScatterFeatureRequirement: {}
       SubworkflowFeatureRequirement: {}
@@ -42,7 +42,7 @@ $graph:
         scatter: stac_item
         scatterMethod: dotproduct
       node_dnbr:
-        run: "#dnbr_clt"
+        run: "#main"
         in:
           tifs:
             source: node_nbr/nbr

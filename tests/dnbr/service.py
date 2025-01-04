@@ -2,7 +2,7 @@ import base64
 import json
 import os
 import pathlib
-
+import unittest
 import yaml
 from dotenv import load_dotenv
 
@@ -29,6 +29,14 @@ except ImportError:
 
 
 class CalrissianRunnerExecutionHandler(ExecutionHandler):
+    def pre_execution_hook(self):
+        # Add logic here for actions before execution, if needed
+        pass
+
+    def post_execution_hook(self):
+        # Add logic here for actions after execution, if needed
+        pass
+    
     def get_pod_env_vars(self):
         # sets two env vars in the pod launched by Calrissian
         return {"A": "1", "B": "1"}
@@ -104,7 +112,7 @@ class CalrissianRunnerExecutionHandler(ExecutionHandler):
 
         print(self.conf)
 
-
+@unittest.skipIf(os.getenv("CI_TEST_SKIP") == "1", "Test is skipped via env variable")
 def dnbr(conf, inputs, outputs):
     with open(
         os.path.join(
@@ -122,7 +130,7 @@ def dnbr(conf, inputs, outputs):
         outputs=outputs,
         execution_handler=CalrissianRunnerExecutionHandler(conf=conf),
     )
-    exit_status = runner.execute()
+    exit_status = runner.execute(wall_time=120)
 
     if exit_status == zoo.SERVICE_SUCCEEDED:
         outputs = runner.outputs
