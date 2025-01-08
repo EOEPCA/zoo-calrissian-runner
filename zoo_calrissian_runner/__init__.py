@@ -299,7 +299,7 @@ class ZooCalrissianRunner:
         self.monitor_interval = 30
         if "lenv" in self.zoo_conf.conf and "usid" in self.zoo_conf.conf["lenv"]:
             uuidString=self.zoo_conf.conf['lenv']['usid']
-            self._namespace_name = self.shorten_namespace(
+            self._namespace_name = ZooCalrissianRunner.shorten_namespace(
                 f"{str(self.zoo_conf.workflow_id).replace('_', '-')}-"
                 f"{uuidString}"
             )
