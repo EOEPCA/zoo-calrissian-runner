@@ -321,9 +321,13 @@ class ZooCalrissianRunner:
         resources = self.cwl.eval_resource()
 
         # TODO how to determine the "right" volume size
-        volume_size = max(max(resources["tmpdirMin"] or [0]), max(resources["tmpdirMax"] or [0])) + max(
-            max(resources["outdirMin"] or [0]), max(resources["outdirMax"] or [0])
-        )
+        if "tmpdirMin" in resources.keys() or "tmpdirMax" in resources.keys() or\
+            "outdirMin" in resources.keys() or "outdirMax" in resources.keys():
+            volume_size = max(max(resources["tmpdirMin"] or [0]), max(resources["tmpdirMax"] or [0])) + max(
+                max(resources["outdirMin"] or [0]), max(resources["outdirMax"] or [0])
+            )
+        else:
+            volume_size = 0
 
         if volume_size == 0:
             volume_size = os.environ.get("DEFAULT_VOLUME_SIZE")
@@ -538,10 +542,10 @@ class ZooCalrissianRunner:
         wf = Parser(
             cwl=self.cwl.raw_cwl,
             output=None,
-            stagein=os.environ.get("WRAPPER_STAGE_IN", "/assets/stagein.yaml"),
-            stageout=os.environ.get("WRAPPER_STAGE_OUT", "/assets/stageout.yaml"),
-            maincwl=os.environ.get("WRAPPER_MAIN", "/assets/maincwl.yaml"),
-            rulez=os.environ.get("WRAPPER_RULES", "/assets/rules.yaml"),
+            stagein=os.environ.get("WRAPPER_STAGE_IN", "assets/stagein.yaml"),
+            stageout=os.environ.get("WRAPPER_STAGE_OUT", "assets/stageout.yaml"),
+            maincwl=os.environ.get("WRAPPER_MAIN", "assets/maincwl.yaml"),
+            rulez=os.environ.get("WRAPPER_RULES", "assets/rules.yaml"),
             assets=None,
             workflow_id=workflow_id,
         )

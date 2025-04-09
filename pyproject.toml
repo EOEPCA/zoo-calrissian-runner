@@ -89,7 +89,7 @@ skip-install = false
 dependencies = [
     "nose2",
     "coverage",
-    "pycalrissian",
+    "pycalrissian@git+https://github.com/Terradue/pycalrissian.git@feature/v1subject-fix",
     "cwl-wrapper",
     "cwl-utils==0.14",
     "attrs",
@@ -103,6 +103,14 @@ dependencies = [
 
 [tool.hatch.envs.test.env-vars]
 PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"
+STORAGE_CLASS="hostpath"
+DEFAULT_VOLUME_SIZE="4096"
+DEFAULT_MAX_CORES="1"
+DEFAULT_MAX_RAM="2048"
+CR_ENDPOINT="myregistry.myhost.com"
+CR_EMAIL="demo@example.com"
+CR_TOKEN="XXXAAABBB"
+CR_USERNAME="demo"
 RETRY_ATTEMPTS="0"
 
 [tool.hatch.envs.test.scripts]

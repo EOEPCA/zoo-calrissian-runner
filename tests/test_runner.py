@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from zoo_calrissian_runner import ZooCalrissianRunner
 from zoo_calrissian_runner.handlers import ExecutionHandler
+import tests.handler_for_tests as handler
 
 load_dotenv()
 
@@ -139,7 +140,7 @@ class TestRunnerResources(unittest.TestCase):
                 ) as report_file:
                     json.dump(aggregated_outputs, report_file, indent=4)
 
-        cls.execution_handler = CalrissianRunnerExecutionHandler
+        cls.execution_handler = handler.CalrissianRunnerExecutionHandler
 
     def test_empty_resource_definition(self):
         inputs = {
