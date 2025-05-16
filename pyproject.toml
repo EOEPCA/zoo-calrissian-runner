@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "zoo_calrissian_runner"
 dynamic = ["version"]
-description = 'Python library for bridging zoo execution context and calrissian'
+description = 'Python library for bridging ZOO-Project execution context and calrissian'
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "Apache License (2.0)"}
