@@ -17,7 +17,6 @@ from pycalrissian.utils import copy_to_volume
 
 from zoo_calrissian_runner.handlers import ExecutionHandler
 
-
 # useful class for hints in CWL
 @attr.s
 class ResourceRequirement:
@@ -296,13 +295,19 @@ class ZooCalrissianRunner:
         self.handler = execution_handler
 
         self.storage_class = os.environ.get("STORAGE_CLASS", "openebs-nfs-test")
+        self.dedicated_namespace = os.environ.get("USE_NAMESPACE", None)
         self.monitor_interval = 30
         if "lenv" in self.zoo_conf.conf and "usid" in self.zoo_conf.conf["lenv"]:
-            uuidString=self.zoo_conf.conf['lenv']['usid']
-            self._namespace_name = ZooCalrissianRunner.shorten_namespace(
-                f"{str(self.zoo_conf.workflow_id).replace('_', '-')}-"
-                f"{uuidString}"
-            )
+            if self.dedicated_namespace is None:
+                uuidString=self.zoo_conf.conf['lenv']['usid']
+                self._namespace_name = ZooCalrissianRunner.shorten_namespace(
+                    f"{str(self.zoo_conf.workflow_id).replace('_', '-')}-"
+                    f"{uuidString}"
+                )
+            else:
+                self._namespace_name = self.shorten_namespace(
+                    self.dedicated_namespace
+                )
         else:
             self._namespace_name = None
 
@@ -417,12 +422,20 @@ class ZooCalrissianRunner:
 
         logger.info(f"namespace: {namespace}")
 
-        session = CalrissianContext(
-            namespace=namespace,
-            storage_class=self.storage_class,
-            volume_size=self.get_volume_size(),
-            image_pull_secrets=secret_config,
-        )
+        if self.dedicated_namespace is None:
+            session = CalrissianContext(
+                namespace=namespace,
+                storage_class=self.storage_class,
+                volume_size=self.get_volume_size(),
+                image_pull_secrets=secret_config,
+            )
+        else:
+            session = CalrissianContext.from_existing_namespace(
+                namespace=namespace,
+                storage_class=self.storage_class,
+                volume_size=self.get_volume_size(),
+                image_pull_secrets=secret_config,
+            )
         session.initialise()
         self.update_status(progress=15, message="processing environment created, preparing execution")
 
