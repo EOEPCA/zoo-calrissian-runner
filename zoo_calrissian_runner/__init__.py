@@ -435,6 +435,7 @@ class ZooCalrissianRunner:
                 storage_class=self.storage_class,
                 volume_size=self.get_volume_size(),
                 image_pull_secrets=secret_config,
+                service_account=os.environ.get("USE_SERVICE_ACCOUNT", None),
             )
         session.initialise()
         self.update_status(progress=15, message="processing environment created, preparing execution")

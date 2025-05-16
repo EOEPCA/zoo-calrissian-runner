@@ -33,4 +33,5 @@ Calrissian and its runtime context can be customized with:
 
 Per default, pycalrissian create a dedicated namespace per job. To modify this behavior and enable reusing a pre-existing namespace, you can use the following environment variable.
 
-* `USE_NAMESPACE: define the name of the pre-existing namespace that pycalrissian should use for the pods associated with the workflow execution.
+* `USE_NAMESPACE`: define the name of the pre-existing namespace that pycalrissian should use for the pods associated with the workflow execution,
+* `USE_SERVICE_ACCOUNT`: define a specific service account name to use, optional, if not provided value is "default".
