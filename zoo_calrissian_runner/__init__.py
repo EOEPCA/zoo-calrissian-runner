@@ -235,7 +235,7 @@ class ZooInputs:
                     elif value["dataType"] == "integer":
                         res[key]=int(value["value"])
                     elif value["dataType"] == "boolean":
-                        res[key]=int(value["value"])
+                        res[key]=bool(value["value"])
                     else:
                         res[key]=value["value"]
             else:
