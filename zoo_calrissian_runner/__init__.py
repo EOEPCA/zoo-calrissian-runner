@@ -201,6 +201,10 @@ class ZooInputs:
     def __init__(self, inputs):
         # this conversion is necessary
         # because zoo converts array of length 1 to a string
+        if inputs is None:
+            self.inputs = {}
+            return
+
         for inp in inputs:
             if (
                 "maxOccurs" in inputs[inp].keys()
@@ -230,14 +234,17 @@ class ZooInputs:
                     import json
                     res[key]=value["value"]
                 else:
-                    if value["dataType"] in ["double","float"]:
-                        res[key]=float(value["value"])
-                    elif value["dataType"] == "integer":
-                        res[key]=int(value["value"])
-                    elif value["dataType"] == "boolean":
-                        res[key]=bool(value["value"])
+                    if value["value"]=="NULL":
+                        res[key]=None
                     else:
-                        res[key]=value["value"]
+                        if value["dataType"] in ["double","float"]:
+                            res[key]=float(value["value"])
+                        elif value["dataType"] == "integer":
+                            res[key]=int(value["value"])
+                        elif value["dataType"] == "boolean":
+                            res[key]=bool(value["value"])
+                        else:
+                            res[key]=value["value"]
             else:
                 if "cache_file" in value:
                     if "mimeType" in value:
