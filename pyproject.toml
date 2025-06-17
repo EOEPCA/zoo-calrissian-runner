@@ -32,7 +32,7 @@ dependencies = [
     "attrs",
     "loguru",
     "setuptools",
-    "kubernetes==26.1.0",
+    "kubernetes==28.1.0",
     "cwltool",
     "zoo-framework"
 ]
@@ -77,7 +77,7 @@ dependencies = [
     "attrs",
     "loguru",
     "setuptools",
-    "kubernetes==26.1.0",
+    "kubernetes==28.1.0",
     "cwltool",
     "zoo-framework"
 ]
@@ -95,7 +95,7 @@ dependencies = [
     "attrs",
     "loguru",
     "setuptools",
-    "kubernetes==26.1.0",
+    "kubernetes==28.1.0",
     "cwltool",
     "zoo-framework",
     "python-dotenv"
