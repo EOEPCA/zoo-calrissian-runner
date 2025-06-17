@@ -28,7 +28,7 @@ classifiers = [
 dependencies = [
     "pycalrissian",
     "cwl-wrapper",
-    "cwl-utils==0.14",
+    "cwl-utils",
     "attrs",
     "loguru",
     "setuptools",
@@ -73,7 +73,7 @@ skip-install = false
 dependencies = [
     "pycalrissian",
     "cwl-wrapper",
-    "cwl-utils==0.14",
+    "cwl-utils",
     "attrs",
     "loguru",
     "setuptools",
@@ -91,7 +91,7 @@ dependencies = [
     "coverage",
     "pycalrissian",
     "cwl-wrapper",
-    "cwl-utils==0.14",
+    "cwl-utils",
     "attrs",
     "loguru",
     "setuptools",
