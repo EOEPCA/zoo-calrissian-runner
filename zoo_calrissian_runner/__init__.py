@@ -34,23 +34,12 @@ class ResourceRequirement:
         return cls(**{k: v for k, v in env.items() if k in inspect.signature(cls).parameters})
 
 
-try:
-    import zoo
-except ImportError:
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../zoo-runner-common')))
 
-    class ZooStub(object):
-        def __init__(self):
-            self.SERVICE_SUCCEEDED = 3
-            self.SERVICE_FAILED = 4
+from zoostub import ZooStub
+zoo = ZooStub()
 
-        def update_status(self, conf, progress):
-            print(f"Status {progress}")
-
-        def _(self, message):
-            print(f"invoked _ with {message}")
-
-    zoo = ZooStub()
-
+from base_runner import BaseRunner
 
 class Workflow:
     def __init__(self, cwl, workflow_id):
