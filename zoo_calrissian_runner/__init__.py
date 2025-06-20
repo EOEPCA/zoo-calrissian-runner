@@ -302,7 +302,7 @@ class ZooCalrissianRunner:
         self.handler = execution_handler
 
         self.storage_class = os.environ.get("STORAGE_CLASS", "openebs-nfs-test")
-        self.dedicated_namespace = os.environ.get("USE_NAMESPACE", None)
+        self.dedicated_namespace = self.handler.get_namespace()
         self.monitor_interval = 30
         if "lenv" in self.zoo_conf.conf and "usid" in self.zoo_conf.conf["lenv"]:
             if self.dedicated_namespace is None:
@@ -442,7 +442,7 @@ class ZooCalrissianRunner:
                 storage_class=self.storage_class,
                 volume_size=self.get_volume_size(),
                 image_pull_secrets=secret_config,
-                service_account=os.environ.get("USE_SERVICE_ACCOUNT", None),
+                service_account=self.handler.get_service_account(),
             )
         session.initialise()
         self.update_status(progress=15, message="processing environment created, preparing execution")

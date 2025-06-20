@@ -28,13 +28,14 @@ classifiers = [
 dependencies = [
     "pycalrissian",
     "cwl-wrapper",
-    "cwl-utils",
+    "cwl-utils==0.14",
     "attrs",
     "loguru",
     "setuptools",
     "kubernetes==28.1.0",
     "cwltool",
-    "zoo-framework"
+    "zoo-framework",
+    "dotenv"
 ]
 
 [project.urls]
@@ -73,7 +74,7 @@ skip-install = false
 dependencies = [
     "pycalrissian",
     "cwl-wrapper",
-    "cwl-utils",
+    "cwl-utils==0.14",
     "attrs",
     "loguru",
     "setuptools",
@@ -91,7 +92,7 @@ dependencies = [
     "coverage",
     "pycalrissian",
     "cwl-wrapper",
-    "cwl-utils",
+    "cwl-utils==0.14",
     "attrs",
     "loguru",
     "setuptools",
