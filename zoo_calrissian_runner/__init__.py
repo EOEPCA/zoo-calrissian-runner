@@ -405,7 +405,7 @@ class ZooCalrissianRunner:
 
     def get_annotations(self):
         """Get the labels for the execution."""
-        return self.zoo_conf.conf["pod_annotations"]
+        return self.zoo_conf.conf["pod_annotations"] if "pod_annotations" in self.zoo_conf.conf else None
 
     def execute(self, wall_time=None):
         self.update_status(progress=2, message="Pre-execution hook")
