@@ -403,9 +403,9 @@ class ZooCalrissianRunner:
             for elem in self.get_workflow_inputs(mandatory=True)
         )
 
-    def get_labels(self):
+    def get_annotations(self):
         """Get the labels for the execution."""
-        return conf["pod_labels"]
+        return self.zoo_conf.conf["pod_annotations"]
 
     def execute(self, wall_time=None):
         self.update_status(progress=2, message="Pre-execution hook")
@@ -439,7 +439,7 @@ class ZooCalrissianRunner:
                 storage_class=self.storage_class,
                 volume_size=self.get_volume_size(),
                 image_pull_secrets=secret_config,
-                labels=self.get_labels(),
+                annotations=self.get_annotations(),
             )
         else:
             session = CalrissianContext.from_existing_namespace(
@@ -447,7 +447,7 @@ class ZooCalrissianRunner:
                 storage_class=self.storage_class,
                 volume_size=self.get_volume_size(),
                 image_pull_secrets=secret_config,
-                labels=self.get_labels(),
+                annotations=self.get_annotations(),
                 service_account=self.handler.get_service_account(),
             )
         session.initialise()
