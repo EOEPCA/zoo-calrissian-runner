@@ -5,7 +5,6 @@ on:
       - develop
       - main
     paths:
-      # Only rebuild website when docs have changed
       - 'README.md'
       - 'docs/**'
       - 'mkdocs.yml'
@@ -18,19 +17,22 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Conda environment from environment.yml
-        uses: mamba-org/provision-with-micromamba@v16
+        uses: mamba-org/provision-with-micromamba@main
         with:
-            environment-file: docs/environment.yml
-            environment-name: env_zoo_calrissian
-            channels: terradue,eoepca,conda-forge
-            channel-priority: flexible
-        shell: bash
+          environment-file: docs/environment.yml
+          environment-name: env_zoo_calrissian
+          channels: terradue,eoepca,conda-forge
+          channel-priority: flexible
 
       - name: Install project
         run: |
           /home/runner/micromamba-root/envs/env_zoo_calrissian/bin/python setup.py install
+        shell: bash
+
       - name: update API docs
         run: |
           /home/runner/micromamba-root/envs/env_zoo_calrissian/bin/pdocs as_markdown --output_dir docs/api/ --exclude_source --overwrite zoo_calrissian_runner
+        shell: bash
 
       - run: /home/runner/micromamba-root/envs/env_zoo_calrissian/bin/mkdocs gh-deploy --force
+        shell: bash
