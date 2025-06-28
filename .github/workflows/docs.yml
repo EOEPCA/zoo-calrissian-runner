@@ -14,25 +14,34 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Install Conda environment from environment.yml
-        uses: mamba-org/provision-with-micromamba@main
+      - name: Setup micromamba
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: docs/environment.yml
           environment-name: env_zoo_calrissian
-          channels: terradue,eoepca,conda-forge
-          channel-priority: flexible
+          cache-downloads: false
+          cache-environment: false
+          init-shell: bash
+          post-cleanup: true
+          environment-activation: true
+          create-args: >-
+            --channel terradue
+            --channel eoepca
+            --channel conda-forge
 
       - name: Install project
         run: |
-          /home/runner/micromamba-root/envs/env_zoo_calrissian/bin/python setup.py install
+          python setup.py install
         shell: bash
 
-      - name: update API docs
+      - name: Generate API docs
         run: |
-          /home/runner/micromamba-root/envs/env_zoo_calrissian/bin/pdocs as_markdown --output_dir docs/api/ --exclude_source --overwrite zoo_calrissian_runner
+          pdocs as_markdown --output_dir docs/api/ --exclude_source --overwrite zoo_calrissian_runner
         shell: bash
 
-      - run: /home/runner/micromamba-root/envs/env_zoo_calrissian/bin/mkdocs gh-deploy --force
+      - name: Deploy docs to GitHub Pages
+        run: |
+          mkdocs gh-deploy --force
         shell: bash
