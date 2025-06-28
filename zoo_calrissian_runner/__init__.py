@@ -45,6 +45,8 @@ class Workflow:
     def __init__(self, cwl, workflow_id):
         self.raw_cwl = cwl
         self.cwl = load_document_by_yaml(cwl, "io://")
+        if not isinstance(self.cwl, list):
+            self.cwl = [self.cwl]
         self.workflow_id = workflow_id
 
     def get_workflow(self) -> cwl_utils.parser.cwl_v1_0.Workflow:
