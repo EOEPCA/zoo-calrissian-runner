@@ -20,6 +20,19 @@ jobs:
         python-version: ["3.10.15"]
     name: install pyenv
     steps:
+    
+    # 🔁 Checkout the main runner repository (e.g., zoo-calrissian-runner)
+    - name: Checkout runner repository
+      uses: actions/checkout@v4
+
+    # ➕ Checkout the common runner utilities (zoostub etc.)
+    - name: Checkout zoo-runner-common
+      uses: actions/checkout@v4
+      with:
+        repository: Aryankhare1225/zoo-runner-common  # Replace with your username/org if different
+        path: zoo-runner-common
+
+        
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
