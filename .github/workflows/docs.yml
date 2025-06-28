@@ -1,47 +1,53 @@
 name: docs
+
 on:
   push:
     branches:
       - develop
       - main
     paths:
+      # Only rebuild docs when relevant files are updated
       - 'README.md'
       - 'docs/**'
       - 'mkdocs.yml'
-      - .github/**
+      - '.github/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Setup micromamba
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup micromamba environment
         uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: docs/environment.yml
           environment-name: env_zoo_calrissian
-          cache-downloads: false
-          cache-environment: false
           init-shell: bash
-          post-cleanup: true
-          environment-activation: true
           create-args: >-
             --channel terradue
             --channel eoepca
             --channel conda-forge
+          post-cleanup: all
+          cache-downloads: false
+          cache-environment: false
 
       - name: Install project
         run: |
+          micromamba activate env_zoo_calrissian
           python setup.py install
-        shell: bash
+        shell: bash -l {0}
 
       - name: Generate API docs
         run: |
+          micromamba activate env_zoo_calrissian
           pdocs as_markdown --output_dir docs/api/ --exclude_source --overwrite zoo_calrissian_runner
-        shell: bash
+        shell: bash -l {0}
 
-      - name: Deploy docs to GitHub Pages
+      - name: Deploy with MkDocs
         run: |
+          micromamba activate env_zoo_calrissian
           mkdocs gh-deploy --force
-        shell: bash
+        shell: bash -l {0}
