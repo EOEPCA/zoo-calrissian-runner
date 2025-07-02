@@ -34,7 +34,8 @@ dependencies = [
     "setuptools",
     "kubernetes==28.1.0",
     "cwltool",
-    "zoo-framework"
+    "zoo-framework",
+    "dotenv"
 ]
 
 [project.urls]
