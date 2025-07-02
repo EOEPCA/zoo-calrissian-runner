@@ -304,6 +304,8 @@ class ZooCalrissianRunner:
         self.storage_class = os.environ.get("STORAGE_CLASS", "openebs-nfs-test")
         if self.handler is not None:
             self.dedicated_namespace = self.handler.get_namespace()
+        else:
+            self.dedicated_namespace = None
         self.monitor_interval = 30
         if "lenv" in self.zoo_conf.conf and "usid" in self.zoo_conf.conf["lenv"]:
             if self.dedicated_namespace is None:
