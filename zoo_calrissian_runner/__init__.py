@@ -14,6 +14,7 @@ from pycalrissian.context import CalrissianContext
 from pycalrissian.execution import CalrissianExecution
 from pycalrissian.job import CalrissianJob
 from pycalrissian.utils import copy_to_volume
+import cwl_utils.__meta__ as cwl_meta
 
 from zoo_calrissian_runner.handlers import ExecutionHandler
 
@@ -55,7 +56,10 @@ except ImportError:
 class Workflow:
     def __init__(self, cwl, workflow_id):
         self.raw_cwl = cwl
-        self.cwl = load_document_by_yaml(cwl, "io://")
+        if cwl_meta.__version__ < "0.16":
+            self.cwl = load_document_by_yaml(cwl, "io://")
+        else:
+            self.cwl = load_document_by_yaml(cwl, "io://", id_=workflow_id, load_all=True)
         self.workflow_id = workflow_id
 
     def get_workflow(self) -> cwl_utils.parser.cwl_v1_0.Workflow:
@@ -71,8 +75,9 @@ class Workflow:
     def get_workflow_inputs(self, mandatory=False):
         inputs = []
         for inp in self.get_workflow().inputs:
+            my_current_type = inp.type if cwl_meta.__version__ < "0.16" else inp.type_
             if mandatory:
-                if inp.default is not None or inp.type == ["null", "string"]:
+                if inp.default is not None or my_current_type == ["null", "string"]:
                     continue
                 else:
                     inputs.append(inp.id.split("/")[-1])
