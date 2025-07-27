@@ -19,10 +19,12 @@ from pycalrissian.utils import copy_to_volume
 #print("PYTHONPATH at runtime:", sys.path)
 
 
-from zoo_calrissian_runner.handlers import ExecutionHandler
+#from zoo_calrissian_runner.handlers import ExecutionHandler
+
+
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../zoo-runner-common')))
-
+from base_handler import ExecutionHandler
 from zoostub import ZooStub
 zoo = ZooStub()
 
