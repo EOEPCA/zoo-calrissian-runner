@@ -7,8 +7,9 @@ from typing import Union
 
 import attr
 import cwl_utils
+from eoap_cwlwrap import wrap
+from eoap_cwlwrap.loader import load_workflow
 from cwl_utils.parser import load_document_by_yaml
-from cwl_wrapper.parser import Parser
 from loguru import logger
 from pycalrissian.context import CalrissianContext
 from pycalrissian.execution import CalrissianExecution
@@ -569,16 +570,21 @@ class ZooCalrissianRunner:
 
     def wrap(self):
         workflow_id = self.get_workflow_id()
+        workflow_id = self.get_workflow_id()
 
-        wf = Parser(
-            cwl=self.cwl.raw_cwl,
-            output=None,
-            stagein=os.environ.get("WRAPPER_STAGE_IN", "assets/stagein.yaml"),
-            stageout=os.environ.get("WRAPPER_STAGE_OUT", "assets/stageout.yaml"),
-            maincwl=os.environ.get("WRAPPER_MAIN", "assets/maincwl.yaml"),
-            rulez=os.environ.get("WRAPPER_RULES", "assets/rules.yaml"),
-            assets=None,
+        workflows_cwl= load_workflow(self.zoo_conf.conf["lenv"]["workflow_path"])
+
+        directory_stage_in_cwl = None
+        if os.environ.get("WRAPPER_STAGE_IN1", None) is not None:
+            directory_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN1", "assets/stagein1.yaml"))
+
+        directory_stage_out_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_OUT1", "/assets/stageout1.yaml"))
+
+        wf = wrap(
+            workflows=workflows_cwl,
             workflow_id=workflow_id,
+            directory_stage_in=directory_stage_in_cwl,
+            stage_out=directory_stage_out_cwl,
         )
 
-        return wf.out
+        return wf
