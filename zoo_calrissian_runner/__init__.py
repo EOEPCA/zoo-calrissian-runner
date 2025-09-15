@@ -570,8 +570,8 @@ class ZooCalrissianRunner:
         workflow_id = self.get_workflow_id()
 
         directory_stage_in_cwl = None
-        if os.environ.get("WRAPPER_STAGE_IN1", None) is not None:
-            directory_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN1", "/assets/stagein1.yaml"))
+        if os.environ.get("WRAPPER_STAGE_IN", None) is not None:
+            directory_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN", "/assets/stagein.yaml"))
 
         try:
             cwl = load_cwl(self.workflow.raw_cwl)
@@ -579,7 +579,7 @@ class ZooCalrissianRunner:
         except Exception as e:
             logger.error(f"Cannot load CWL: {e}")
         try:
-            with open(os.environ.get("WRAPPER_STAGE_OUT1", "/assets/stageout1.yaml")) as stream:
+            with open(os.environ.get("WRAPPER_STAGE_OUT", "/assets/stageout.yaml")) as stream:
                 directory_stage_out_cwl = load_cwl_from_stream(stream)
         except Exception as e:
             logger.error(f"Cannot load stage-out CWL: {e}")
