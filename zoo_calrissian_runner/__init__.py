@@ -8,8 +8,9 @@ from typing import Union
 import attr
 import cwl_utils
 from eoap_cwlwrap import wrap
-from eoap_cwlwrap.loader import load_workflow
-from cwl_utils.parser import load_document_by_yaml
+from cwl_loader import load_cwl_from_location as load_workflow
+from cwl_loader import load_cwl_from_yaml as load_cwl
+from cwl_loader import load_cwl_from_stream
 from loguru import logger
 from pycalrissian.context import CalrissianContext
 from pycalrissian.execution import CalrissianExecution
@@ -57,10 +58,7 @@ except ImportError:
 class Workflow:
     def __init__(self, cwl, workflow_id):
         self.raw_cwl = cwl
-        if cwl_meta.__version__ < "0.16":
-            self.cwl = load_document_by_yaml(cwl, "io://")
-        else:
-            self.cwl = load_document_by_yaml(cwl, "io://", id_=workflow_id, load_all=True)
+        self.cwl = load_cwl(cwl)
         self.workflow_id = workflow_id
 
     def get_workflow(self) -> cwl_utils.parser.cwl_v1_0.Workflow:
@@ -303,7 +301,7 @@ class ZooCalrissianRunner:
         self.zoo_conf = ZooConf(conf)
         self.inputs = ZooInputs(inputs)
         self.outputs = ZooOutputs(outputs)
-        self.cwl = Workflow(cwl, self.zoo_conf.workflow_id)
+        self.workflow = Workflow(cwl, self.zoo_conf.workflow_id)
 
         self.handler = execution_handler
 
@@ -339,7 +337,7 @@ class ZooCalrissianRunner:
     def get_volume_size(self) -> str:
         """returns volume size that the pods share"""
 
-        resources = self.cwl.eval_resource()
+        resources = self.workflow.eval_resource()
 
         # TODO how to determine the "right" volume size
         volume_size = max(max(resources["tmpdirMin"] or [0]), max(resources["tmpdirMax"] or [0])) + max(
@@ -355,7 +353,7 @@ class ZooCalrissianRunner:
 
     def get_max_cores(self) -> int:
         """returns the maximum number of cores that pods can use"""
-        resources = self.cwl.eval_resource()
+        resources = self.workflow.eval_resource()
 
         max_cores = max(max(resources["coresMin"] or [0]), max(resources["coresMax"] or [0]))
 
@@ -367,7 +365,7 @@ class ZooCalrissianRunner:
 
     def get_max_ram(self) -> str:
         """returns the maximum RAM that pods can use"""
-        resources = self.cwl.eval_resource()
+        resources = self.workflow.eval_resource()
         max_ram = max(max(resources["ramMin"] or [0]), max(resources["ramMax"] or [0]))
 
         if max_ram == 0:
@@ -403,7 +401,7 @@ class ZooCalrissianRunner:
 
     def get_workflow_inputs(self, mandatory=False):
         """Returns the CWL workflow inputs"""
-        return self.cwl.get_workflow_inputs(mandatory=mandatory)
+        return self.workflow.get_workflow_inputs(mandatory=mandatory)
 
     def assert_parameters(self):
         """checks all mandatory processing parameters were provided"""
@@ -570,21 +568,32 @@ class ZooCalrissianRunner:
 
     def wrap(self):
         workflow_id = self.get_workflow_id()
-        workflow_id = self.get_workflow_id()
-
-        workflows_cwl= load_workflow(self.zoo_conf.conf["lenv"]["workflow_path"])
 
         directory_stage_in_cwl = None
         if os.environ.get("WRAPPER_STAGE_IN1", None) is not None:
-            directory_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN1", "assets/stagein1.yaml"))
+            directory_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN1", "/assets/stagein1.yaml"))
 
-        directory_stage_out_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_OUT1", "/assets/stageout1.yaml"))
+        try:
+            cwl = load_cwl(self.workflow.raw_cwl)
+            logger.info("CWL loaded from raw CWL")
+        except Exception as e:
+            logger.error(f"Cannot load CWL: {e}")
+        try:
+            with open(os.environ.get("WRAPPER_STAGE_OUT1", "/assets/stageout1.yaml")) as stream:
+                directory_stage_out_cwl = load_cwl_from_stream(stream)
+        except Exception as e:
+            logger.error(f"Cannot load stage-out CWL: {e}")
+            directory_stage_out_cwl = None
 
-        wf = wrap(
-            workflows=workflows_cwl,
-            workflow_id=workflow_id,
-            directory_stage_in=directory_stage_in_cwl,
-            stage_out=directory_stage_out_cwl,
-        )
+        try:
+            wf = wrap(
+                workflows=self.workflow.cwl,
+                workflow_id=workflow_id,
+                directory_stage_in=directory_stage_in_cwl,
+                stage_out=directory_stage_out_cwl,
+            )
+        except Exception as e:
+            logger.error(f"Cannot wrap CWL: {e}")
+            raise e
 
         return wf
