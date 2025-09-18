@@ -8,15 +8,16 @@ from typing import Union
 import attr
 import cwl_utils
 from eoap_cwlwrap import wrap
+from cwl_loader import dump_cwl
 from cwl_loader import load_cwl_from_location as load_workflow
 from cwl_loader import load_cwl_from_yaml as load_cwl
-from cwl_loader import load_cwl_from_stream
 from loguru import logger
 from pycalrissian.context import CalrissianContext
 from pycalrissian.execution import CalrissianExecution
 from pycalrissian.job import CalrissianJob
 from pycalrissian.utils import copy_to_volume
 import cwl_utils.__meta__ as cwl_meta
+import pathlib
 
 from zoo_calrissian_runner.handlers import ExecutionHandler
 
@@ -232,10 +233,18 @@ class ZooInputs:
         res={}
         hasVal=False;
         for key, value in self.inputs.items():
-            if "dataType" in value:
+            logger.info(f"Processing input {key} with value {value}")
+            if "format" in value:
+                # We can also use res[key]=value
+                # TBD: Should we distinguish between file and basic strings with format, such as date, datetime?
+                # TBD: Should we find the corresponding class from the schema definition?
+                res[key]={
+                    "format": value["format"],
+                    "value": value["value"],
+                }
+            elif "dataType" in value:
                 if isinstance(value["dataType"],list):
                     # How should we pass array for an input?
-                    import json
                     res[key]=value["value"]
                 else:
                     if value["value"]=="NULL":
@@ -250,18 +259,17 @@ class ZooInputs:
                         else:
                             res[key]=value["value"]
             else:
+                # default case
                 if "cache_file" in value:
                     if "mimeType" in value:
                         res[key]={
-                            "class": "File",
-                            "path": value["cache_file"],
-                            "format": value["mimeType"]
+                            "format": value["mimeType"],
+                            "value": value["value"]
                         }
                     else:
                         res[key]={
-                            "class": "File",
-                            "path": value["cache_file"],
-                            "format": "text/plain"
+                            "format": "text/plain",
+                            "value": value["value"]
                         }
                 else:
                     res[key]=value["value"]
@@ -467,13 +475,12 @@ class ZooCalrissianRunner:
         }
 
 
-        self.update_status(progress=20, message="upload required files")
-
+        logger.info(f"Processing parameters: {processing_parameters}")
 
         # Upload input complex data into calrissian_wdir
         for i in processing_parameters:
             if isinstance(processing_parameters[i],dict):
-                if processing_parameters[i]["class"]=="File":
+                if processing_parameters[i].get("class",None)=="File":
                     copy_to_volume(
                         context=session,
                         volume={
@@ -492,9 +499,9 @@ class ZooCalrissianRunner:
                         destination_path="/calrissian",
                     )
                     processing_parameters[i]["path"]=processing_parameters[i]["path"].replace(self.zoo_conf.conf["main"]["tmpPath"],"/calrissian")
-        # checks if all parameters where provided
 
         logger.info("create Calrissian job")
+        self.update_status(progress=21, message="Submit execution")
         job = CalrissianJob(
             cwl=wrapped_workflow,
             params=processing_parameters,
@@ -569,18 +576,14 @@ class ZooCalrissianRunner:
     def wrap(self):
         workflow_id = self.get_workflow_id()
 
+        # Load the directory stage-in CWL
         directory_stage_in_cwl = None
         if os.environ.get("WRAPPER_STAGE_IN", None) is not None:
-            directory_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN", "/assets/stagein.yaml"))
+            directory_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN1", "/assets/stagein1.yaml"))
 
+        # Load the directory stage-out CWL
         try:
-            cwl = load_cwl(self.workflow.raw_cwl)
-            logger.info("CWL loaded from raw CWL")
-        except Exception as e:
-            logger.error(f"Cannot load CWL: {e}")
-        try:
-            with open(os.environ.get("WRAPPER_STAGE_OUT", "/assets/stageout.yaml")) as stream:
-                directory_stage_out_cwl = load_cwl_from_stream(stream)
+            directory_stage_out_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_OUT1", "/assets/stageout1.yaml"))
         except Exception as e:
             logger.error(f"Cannot load stage-out CWL: {e}")
             directory_stage_out_cwl = None
@@ -592,6 +595,16 @@ class ZooCalrissianRunner:
                 directory_stage_in=directory_stage_in_cwl,
                 stage_out=directory_stage_out_cwl,
             )
+            with open(os.path.join(
+                 pathlib.Path(self.zoo_conf.conf["main"]["tmpPath"]).absolute(),
+                 f"wrapped-workflow-{self.zoo_conf.conf['lenv']['usid']}.cwl",
+            ),"w") as stream:
+                dump_cwl(wf,stream)
+            logger.info(f"Wrapped workflow saved to {stream.name}")
+            os.environ["ZOO_WRAPPED_WORKFLOW"]=str(os.path.join(
+                 pathlib.Path(self.zoo_conf.conf["main"]["tmpPath"]).absolute(),
+                 f"wrapped-workflow-{self.zoo_conf.conf['lenv']['usid']}.cwl",
+            ))
         except Exception as e:
             logger.error(f"Cannot wrap CWL: {e}")
             raise e
