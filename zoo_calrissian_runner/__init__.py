@@ -18,6 +18,7 @@ from pycalrissian.job import CalrissianJob
 from pycalrissian.utils import copy_to_volume
 import cwl_utils.__meta__ as cwl_meta
 import pathlib
+import json
 
 from zoo_calrissian_runner.handlers import ExecutionHandler
 
@@ -261,18 +262,39 @@ class ZooInputs:
             else:
                 # default case
                 if "cache_file" in value:
-                    if "mimeType" in value:
+                    if "isArray" in value and value["isArray"]=="true":
+                        res[key]=[]
+                        for i in range(len(value["value"])):
+                            if "mimeType" in value:
+                                res[key].append({
+                                    "format": value["mimeType"][i],
+                                    "value": value["value"][i],
+                                })
+                            else:
+                                res[key].append({
+                                    "format": "text/plain",
+                                    "value": value["value"][i],
+                                })
+                    else:
+                        if "mimeType" in value:
+                            res[key]={
+                                "format": value["mimeType"],
+                                "value": value["value"]
+                            }
+                        else:
+                            res[key]={
+                                "format": "text/plain",
+                                "value": value["value"]
+                            }
+                else:
+                    if "lowerCorner" in value and "upperCorner" in value:
                         res[key]={
-                            "format": value["mimeType"],
-                            "value": value["value"]
+                            "format": "ogc-bbox",
+                            "bbox": json.loads(value["value"]),
+                            "crs": value["crs"].replace("http://www.opengis.net/def/crs/OGC/1.3/","")
                         }
                     else:
-                        res[key]={
-                            "format": "text/plain",
-                            "value": value["value"]
-                        }
-                else:
-                    res[key]=value["value"]
+                        res[key]=value["value"]
         return res 
 
 
