@@ -7,14 +7,18 @@ from typing import Union
 
 import attr
 import cwl_utils
-from cwl_utils.parser import load_document_by_yaml
-from cwl_wrapper.parser import Parser
+from eoap_cwlwrap import wrap
+from cwl_loader import dump_cwl
+from cwl_loader import load_cwl_from_location as load_workflow
+from cwl_loader import load_cwl_from_yaml as load_cwl
 from loguru import logger
 from pycalrissian.context import CalrissianContext
 from pycalrissian.execution import CalrissianExecution
 from pycalrissian.job import CalrissianJob
 from pycalrissian.utils import copy_to_volume
 import cwl_utils.__meta__ as cwl_meta
+import pathlib
+import json
 
 from zoo_calrissian_runner.handlers import ExecutionHandler
 
@@ -56,10 +60,7 @@ except ImportError:
 class Workflow:
     def __init__(self, cwl, workflow_id):
         self.raw_cwl = cwl
-        if cwl_meta.__version__ < "0.16":
-            self.cwl = load_document_by_yaml(cwl, "io://")
-        else:
-            self.cwl = load_document_by_yaml(cwl, "io://", id_=workflow_id, load_all=True)
+        self.cwl = load_cwl(cwl)
         self.workflow_id = workflow_id
 
     def get_workflow(self) -> cwl_utils.parser.cwl_v1_0.Workflow:
@@ -233,10 +234,18 @@ class ZooInputs:
         res={}
         hasVal=False;
         for key, value in self.inputs.items():
-            if "dataType" in value:
+            logger.info(f"Processing input {key} with value {value}")
+            if "format" in value:
+                # We can also use res[key]=value
+                # TBD: Should we distinguish between file and basic strings with format, such as date, datetime?
+                # TBD: Should we find the corresponding class from the schema definition?
+                res[key]={
+                    "format": value["format"],
+                    "value": value["value"],
+                }
+            elif "dataType" in value:
                 if isinstance(value["dataType"],list):
                     # How should we pass array for an input?
-                    import json
                     res[key]=value["value"]
                 else:
                     if value["value"]=="NULL":
@@ -251,21 +260,41 @@ class ZooInputs:
                         else:
                             res[key]=value["value"]
             else:
+                # default case
                 if "cache_file" in value:
-                    if "mimeType" in value:
+                    if "isArray" in value and value["isArray"]=="true":
+                        res[key]=[]
+                        for i in range(len(value["value"])):
+                            if "mimeType" in value:
+                                res[key].append({
+                                    "format": value["mimeType"][i],
+                                    "value": value["value"][i],
+                                })
+                            else:
+                                res[key].append({
+                                    "format": "text/plain",
+                                    "value": value["value"][i],
+                                })
+                    else:
+                        if "mimeType" in value:
+                            res[key]={
+                                "format": value["mimeType"],
+                                "value": value["value"]
+                            }
+                        else:
+                            res[key]={
+                                "format": "text/plain",
+                                "value": value["value"]
+                            }
+                else:
+                    if "lowerCorner" in value and "upperCorner" in value:
                         res[key]={
-                            "class": "File",
-                            "path": value["cache_file"],
-                            "format": value["mimeType"]
+                            "format": "ogc-bbox",
+                            "bbox": json.loads(value["value"]),
+                            "crs": value["crs"].replace("http://www.opengis.net/def/crs/OGC/1.3/","")
                         }
                     else:
-                        res[key]={
-                            "class": "File",
-                            "path": value["cache_file"],
-                            "format": "text/plain"
-                        }
-                else:
-                    res[key]=value["value"]
+                        res[key]=value["value"]
         return res 
 
 
@@ -302,7 +331,7 @@ class ZooCalrissianRunner:
         self.zoo_conf = ZooConf(conf)
         self.inputs = ZooInputs(inputs)
         self.outputs = ZooOutputs(outputs)
-        self.cwl = Workflow(cwl, self.zoo_conf.workflow_id)
+        self.workflow = Workflow(cwl, self.zoo_conf.workflow_id)
 
         self.handler = execution_handler
 
@@ -338,7 +367,7 @@ class ZooCalrissianRunner:
     def get_volume_size(self) -> str:
         """returns volume size that the pods share"""
 
-        resources = self.cwl.eval_resource()
+        resources = self.workflow.eval_resource()
 
         # TODO how to determine the "right" volume size
         volume_size = max(max(resources["tmpdirMin"] or [0]), max(resources["tmpdirMax"] or [0])) + max(
@@ -354,7 +383,7 @@ class ZooCalrissianRunner:
 
     def get_max_cores(self) -> int:
         """returns the maximum number of cores that pods can use"""
-        resources = self.cwl.eval_resource()
+        resources = self.workflow.eval_resource()
 
         max_cores = max(max(resources["coresMin"] or [0]), max(resources["coresMax"] or [0]))
 
@@ -366,7 +395,7 @@ class ZooCalrissianRunner:
 
     def get_max_ram(self) -> str:
         """returns the maximum RAM that pods can use"""
-        resources = self.cwl.eval_resource()
+        resources = self.workflow.eval_resource()
         max_ram = max(max(resources["ramMin"] or [0]), max(resources["ramMax"] or [0]))
 
         if max_ram == 0:
@@ -402,7 +431,7 @@ class ZooCalrissianRunner:
 
     def get_workflow_inputs(self, mandatory=False):
         """Returns the CWL workflow inputs"""
-        return self.cwl.get_workflow_inputs(mandatory=mandatory)
+        return self.workflow.get_workflow_inputs(mandatory=mandatory)
 
     def assert_parameters(self):
         """checks all mandatory processing parameters were provided"""
@@ -468,13 +497,12 @@ class ZooCalrissianRunner:
         }
 
 
-        self.update_status(progress=20, message="upload required files")
-
+        logger.info(f"Processing parameters: {processing_parameters}")
 
         # Upload input complex data into calrissian_wdir
         for i in processing_parameters:
             if isinstance(processing_parameters[i],dict):
-                if processing_parameters[i]["class"]=="File":
+                if processing_parameters[i].get("class",None)=="File":
                     copy_to_volume(
                         context=session,
                         volume={
@@ -493,9 +521,9 @@ class ZooCalrissianRunner:
                         destination_path="/calrissian",
                     )
                     processing_parameters[i]["path"]=processing_parameters[i]["path"].replace(self.zoo_conf.conf["main"]["tmpPath"],"/calrissian")
-        # checks if all parameters where provided
 
         logger.info("create Calrissian job")
+        self.update_status(progress=21, message="Submit execution")
         job = CalrissianJob(
             cwl=wrapped_workflow,
             params=processing_parameters,
@@ -570,15 +598,41 @@ class ZooCalrissianRunner:
     def wrap(self):
         workflow_id = self.get_workflow_id()
 
-        wf = Parser(
-            cwl=self.cwl.raw_cwl,
-            output=None,
-            stagein=os.environ.get("WRAPPER_STAGE_IN", "assets/stagein.yaml"),
-            stageout=os.environ.get("WRAPPER_STAGE_OUT", "assets/stageout.yaml"),
-            maincwl=os.environ.get("WRAPPER_MAIN", "assets/maincwl.yaml"),
-            rulez=os.environ.get("WRAPPER_RULES", "assets/rules.yaml"),
-            assets=None,
-            workflow_id=workflow_id,
-        )
+        # Load the directory stage-in CWL
+        directory_stage_in_cwl = None
+        if os.environ.get("WRAPPER_STAGE_IN", None) is not None:
+            directory_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN", "/assets/stagein.yaml"))
 
-        return wf.out
+        # Load the directory stage-in CWL
+        file_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN1", "/assets/stagein-file.yaml"))
+
+        # Load the directory stage-out CWL
+        try:
+            directory_stage_out_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_OUT", "/assets/stageout.yaml"))
+        except Exception as e:
+            logger.error(f"Cannot load stage-out CWL: {e}")
+            directory_stage_out_cwl = None
+
+        try:
+            wf = wrap(
+                workflows=self.workflow.cwl,
+                workflow_id=workflow_id,
+                directory_stage_in=directory_stage_in_cwl,
+                file_stage_in=file_stage_in_cwl,
+                stage_out=directory_stage_out_cwl,
+            )
+            with open(os.path.join(
+                 pathlib.Path(self.zoo_conf.conf["main"]["tmpPath"]).absolute(),
+                 f"wrapped-workflow-{self.zoo_conf.conf['lenv']['usid']}.cwl",
+            ),"w") as stream:
+                dump_cwl(wf,stream)
+            logger.info(f"Wrapped workflow saved to {stream.name}")
+            os.environ["ZOO_WRAPPED_WORKFLOW"]=str(os.path.join(
+                 pathlib.Path(self.zoo_conf.conf["main"]["tmpPath"]).absolute(),
+                 f"wrapped-workflow-{self.zoo_conf.conf['lenv']['usid']}.cwl",
+            ))
+        except Exception as e:
+            logger.error(f"Cannot wrap CWL: {e}")
+            raise e
+
+        return wf
