@@ -11,6 +11,7 @@ from eoap_cwlwrap import wrap
 from cwl_loader import dump_cwl
 from cwl_loader import load_cwl_from_location as load_workflow
 from cwl_loader import load_cwl_from_yaml as load_cwl
+from cwl_utils.parser import save
 from loguru import logger
 from pycalrissian.context import CalrissianContext
 from pycalrissian.execution import CalrissianExecution
@@ -614,23 +615,17 @@ class ZooCalrissianRunner:
             directory_stage_out_cwl = None
 
         try:
-            wf = wrap(
+            wrapped_worflow = wrap(
                 workflows=self.workflow.cwl,
                 workflow_id=workflow_id,
                 directory_stage_in=directory_stage_in_cwl,
                 file_stage_in=file_stage_in_cwl,
                 stage_out=directory_stage_out_cwl,
             )
-            with open(os.path.join(
-                 pathlib.Path(self.zoo_conf.conf["main"]["tmpPath"]).absolute(),
-                 f"wrapped-workflow-{self.zoo_conf.conf['lenv']['usid']}.cwl",
-            ),"w") as stream:
-                dump_cwl(wf,stream)
-            logger.info(f"Wrapped workflow saved to {stream.name}")
-            os.environ["ZOO_WRAPPED_WORKFLOW"]=str(os.path.join(
-                 pathlib.Path(self.zoo_conf.conf["main"]["tmpPath"]).absolute(),
-                 f"wrapped-workflow-{self.zoo_conf.conf['lenv']['usid']}.cwl",
-            ))
+            wf = save(
+                val=wrapped_worflow,
+                relative_uris=False
+            )
         except Exception as e:
             logger.error(f"Cannot wrap CWL: {e}")
             raise e
