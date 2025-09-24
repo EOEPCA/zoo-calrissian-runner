@@ -607,7 +607,7 @@ class ZooCalrissianRunner:
             directory_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN", "/assets/stagein.yaml"))
 
         # Load the directory stage-in CWL
-        file_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN1", "/assets/stagein-file.yaml"))
+        file_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN_FILE", "/assets/stagein-file.yaml"))
 
         # Load the directory stage-out CWL
         try:

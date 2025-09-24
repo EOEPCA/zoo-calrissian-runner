@@ -31,9 +31,9 @@ jobs:
 
       - name: Install project
         run: |
-          /home/runner/micromamba-root/envs/env_zoo_calrissian/bin/python setup.py install
+          python setup.py install
       - name: update API docs
         run: |
-          /home/runner/micromamba-root/envs/env_zoo_calrissian/bin/pdocs as_markdown --output_dir docs/api/ --exclude_source --overwrite zoo_calrissian_runner
+          pdocs as_markdown --output_dir docs/api/ --exclude_source --overwrite zoo_calrissian_runner
 
-      - run: /home/runner/micromamba-root/envs/env_zoo_calrissian/bin/mkdocs gh-deploy --force
+      - run: mkdocs gh-deploy --force
