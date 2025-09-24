@@ -119,8 +119,8 @@ class TestCalrissianContext(unittest.TestCase):
         inputs["param_2"] = {"value": "value2"}
         outputs = {"Result": {"value": ""}}
         runner = ZooCalrissianRunner(cwl=self.cwl, conf=self.conf, inputs=inputs, outputs=outputs)
-        print(type(runner.cwl.get_workflow()))
-        self.assertIsInstance(runner.cwl.get_workflow(), Workflow)
+        print(type(runner.workflow.get_workflow()))
+        self.assertIsInstance(runner.workflow.get_workflow(), Workflow)
 
     def test_get_wrong_workflow(self):
         conf = {}
@@ -129,7 +129,7 @@ class TestCalrissianContext(unittest.TestCase):
         outputs = {"Result": {"value": ""}}
         runner = ZooCalrissianRunner(cwl=self.cwl, conf=conf, inputs=self.inputs, outputs=outputs)
         with self.assertRaises(ValueError):
-            runner.cwl.get_workflow()
+            runner.workflow.get_workflow()
 
     def test_get_workflow_inputs(self):
         inputs = {}
@@ -138,7 +138,7 @@ class TestCalrissianContext(unittest.TestCase):
 
         self.assertEqual(
             set(["pre_stac_item", "post_stac_item", "aoi", "bands"]),
-            set(runner.cwl.get_workflow_inputs()),
+            set(runner.workflow.get_workflow_inputs()),
         )
 
     def test_get_workflow_inputs_bis(self):
