@@ -240,7 +240,6 @@ class ZooInputs:
             logger.info(f"Processing input {key} with value {value}")
             if "format" in value:
                 # We can also use res[key]=value
-                # TBD: Should we distinguish between file and basic strings with format, such as date, datetime?
                 # TBD: Should we find the corresponding class from the schema definition?
                 res[key]={
                     "format": value["format"],
@@ -268,27 +267,16 @@ class ZooInputs:
                     if "isArray" in value and value["isArray"]=="true":
                         res[key]=[]
                         for i in range(len(value["value"])):
-                            if "mimeType" in value:
-                                res[key].append({
-                                    "format": value["mimeType"][i],
-                                    "value": value["value"][i],
-                                })
-                            else:
-                                res[key].append({
-                                    "format": "text/plain",
-                                    "value": value["value"][i],
-                                })
+                            res[key].append({
+                                "format": 
+                                    value["mimeType"][i] if "mimeType" in value else "text/plain",
+                                "value": value["value"][i],
+                            })
                     else:
-                        if "mimeType" in value:
-                            res[key]={
-                                "format": value["mimeType"],
-                                "value": value["value"]
-                            }
-                        else:
-                            res[key]={
-                                "format": "text/plain",
-                                "value": value["value"]
-                            }
+                        res[key]={
+                            "format": value.get("mimeType","text/plain"),
+                            "value": value["value"]
+                        }
                 else:
                     if "lowerCorner" in value and "upperCorner" in value:
                         res[key]={

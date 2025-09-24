@@ -31,7 +31,7 @@ jobs:
 
       - name: Install project
         run: |
-          python setup.py install
+          pip install .
       - name: update API docs
         run: |
           pdocs as_markdown --output_dir docs/api/ --exclude_source --overwrite zoo_calrissian_runner
