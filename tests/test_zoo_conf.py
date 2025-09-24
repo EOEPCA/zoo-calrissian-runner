@@ -2,6 +2,7 @@ import tempfile
 import unittest
 
 import yaml
+import os
 from cwl_utils.parser.cwl_v1_0 import Workflow
 
 from zoo_calrissian_runner import ZooCalrissianRunner
@@ -95,6 +96,9 @@ class TestCalrissianContext(unittest.TestCase):
         inputs["param_2"] = {"value": "value2"}
         outputs = {"Result": {"value": ""}}
         runner = ZooCalrissianRunner(cwl=self.cwl, conf=self.conf, inputs=inputs, outputs=outputs)
+
+        base_url = 'https://raw.githubusercontent.com/eoap/application-package-patterns/refs/heads/main'
+        os.environ["WRAPPER_STAGE_OUT"] = f"{base_url}/templates/stage-out.cwl"
 
         wrapped = runner.wrap()
 

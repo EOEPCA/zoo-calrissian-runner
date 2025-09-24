@@ -598,23 +598,31 @@ class ZooCalrissianRunner:
 
         return exit_value
 
+    def load_a_workflow(self, location):
+        try:
+            workflow = load_workflow(location)
+        except Exception as e:
+            logger.error(f"Cannot load CWL from {location}: {e}")
+            workflow = None
+        return workflow
+
     def wrap(self):
         workflow_id = self.get_workflow_id()
 
         # Load the directory stage-in CWL
-        directory_stage_in_cwl = None
-        if os.environ.get("WRAPPER_STAGE_IN", None) is not None:
-            directory_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN", "/assets/stagein.yaml"))
+        directory_stage_in_cwl = self.load_a_workflow(
+            os.environ.get("WRAPPER_STAGE_IN", "/assets/stagein.yaml")
+        )
 
         # Load the directory stage-in CWL
-        file_stage_in_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_IN_FILE", "/assets/stagein-file.yaml"))
+        file_stage_in_cwl = self.load_a_workflow(
+            os.environ.get("WRAPPER_STAGE_IN_FILE", "/assets/stagein-file.yaml")
+        )
 
         # Load the directory stage-out CWL
-        try:
-            directory_stage_out_cwl = load_workflow(os.environ.get("WRAPPER_STAGE_OUT", "/assets/stageout.yaml"))
-        except Exception as e:
-            logger.error(f"Cannot load stage-out CWL: {e}")
-            directory_stage_out_cwl = None
+        directory_stage_out_cwl = self.load_a_workflow(
+            os.environ.get("WRAPPER_STAGE_OUT", "/assets/stageout.yaml")
+        )
 
         try:
             wrapped_workflow = wrap(
