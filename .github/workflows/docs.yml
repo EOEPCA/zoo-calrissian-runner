@@ -22,8 +22,12 @@ jobs:
         with:
             environment-file: docs/environment.yml
             environment-name: env_zoo_calrissian
-            channels: terradue,eoepca,conda-forge
-            channel-priority: flexible
+            condarc: |
+              channels:
+                - terradue
+                - eoepca
+                - conda-forge
+              channel-priority: flexible
 
       - name: Install project
         run: |
