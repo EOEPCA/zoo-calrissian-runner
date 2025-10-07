@@ -236,7 +236,7 @@ class ZooInputs:
         """Returns a list with the input parameters keys"""
         res={}
         hasVal=False;
-        allowed_types = ["int","float","boolean","double"]
+        allowed_types = ["integer","float","boolean","double"]
         for key, value in self.inputs.items():
             logger.info(f"Processing input {key} with value {value}")
             if "format" in value and not("dataType" in value and value["dataType"] in allowed_types):
