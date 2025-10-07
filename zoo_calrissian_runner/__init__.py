@@ -236,9 +236,10 @@ class ZooInputs:
         """Returns a list with the input parameters keys"""
         res={}
         hasVal=False;
+        allowed_types = ["int","float","boolean","double"]
         for key, value in self.inputs.items():
             logger.info(f"Processing input {key} with value {value}")
-            if "format" in value:
+            if "format" in value and not("dataType" in value and value["dataType"] in allowed_types):
                 # We can also use res[key]=value
                 # TBD: Should we find the corresponding class from the schema definition?
                 res[key]={
@@ -248,7 +249,15 @@ class ZooInputs:
             elif "dataType" in value:
                 if isinstance(value["dataType"],list):
                     # How should we pass array for an input?
-                    res[key]=value["value"]
+                    if value["dataType"][0] in allowed_types:
+                        if value["dataType"][0] in ["double","float"]:
+                            res[key]=[float(item) for item in value["value"]]
+                        elif value["dataType"][0] == "integer":
+                            res[key]=[int(item) for item in value["value"]]
+                        elif value["dataType"][0] == "boolean":
+                            res[key]=[bool(item) for item in value["value"]]
+                    else:
+                        res[key]=value["value"]
                 else:
                     if value["value"]=="NULL":
                         res[key]=None
