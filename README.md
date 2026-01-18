@@ -2,13 +2,33 @@
 
 Python library for bridging zoo execution context and calrissian
 
+## 🔗 Dependencies
+
+This runner now uses **[zoo-runner-common](https://github.com/ZOO-Project/zoo-runner-common)** for shared functionality, eliminating ~166 lines of duplicated code.
+
+**Key changes:**
+- ✅ Inherits from `BaseRunner` for common methods
+- ✅ Uses shared `ZooConf`, `ZooInputs`, `ZooOutputs`, `CWLWorkflow` classes
+- ✅ Implements `ExecutionHandler` interface from zoo-runner-common
+- ✅ Focuses only on Calrissian/Kubernetes-specific logic
+
+## Installation
+
+Install with zoo-runner-common dependency:
+
+```bash
+pip install zoo-calrissian-runner
+# Or from source:
+pip install -e . 
+```
+
 ## Environment variables
 
-* `STORAGE_CLASS`: RWX storage class
+* `STORAGE_CLASS`: RWX storage class (use `"hostpath"` for Docker Desktop on Mac)
 * `CALRISSIAN_IMAGE`: Calrissian container image
 * `DEFAULT_VOLUME_SIZE`: default size for RWX storage volume
-* `MAX_CORES`: maximum number of cores to use during a Calrissian Job to be used if the CWL does not set the resource requirements
-* `MAX_RAM`: maximum number of RAM to use during a Calrissian Job to be used if the CWL does not set the resource requirements
+* `DEFAULT_MAX_CORES`: maximum number of cores if CWL doesn't specify resource requirements
+* `DEFAULT_MAX_RAM`: maximum RAM (in MB) if CWL doesn't specify resource requirements
 
 CWL wrapper templates:
 

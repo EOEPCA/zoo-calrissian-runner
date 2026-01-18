@@ -1,50 +1,68 @@
 cwlVersion: v1.0
-baseCommand: Stars
-doc: "Run Stars for staging input data"
+
 class: CommandLineTool
-hints:
-  DockerRequirement:
-    dockerPull: terradue/stars:2.3.1
-  "cwltool:Secrets":
-    secrets:
-    - ADES_STAGEIN_AWS_ACCESS_KEY_ID
-    - ADES_STAGEIN_AWS_SECRET_ACCESS_KEY
-id: stars
-arguments:
-- copy
-- -v
-- -rel
-- -r
-- '4'
-- valueFrom: ${ if (inputs.input.split("#").length == 2)
-              { return ["-af", inputs.input.split("#")[1]]; }
-             else {return '--empty'}
-           }
-- -o
-- ./
-- valueFrom: ${ return inputs.input.split("#")[0]; }
+id: stage-in-directory
+
 inputs:
-  ADES_STAGEIN_AWS_SERVICEURL:
-    type: string?
-  ADES_STAGEIN_AWS_REGION:
-    type: string?
-  ADES_STAGEIN_AWS_ACCESS_KEY_ID:
-    type: string?
-  ADES_STAGEIN_AWS_SECRET_ACCESS_KEY:
-    type: string?
-outputs: {}
-baseCommand: ['/bin/bash', 'stagein.sh']
+  reference:
+    type: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml#URI
+    doc: "A STAC Item to stage" 
+    label: "STAC Item URL"
+outputs:
+  staged:
+    type: Directory
+    outputBinding:
+      glob: .
+baseCommand: 
+- python
+- stage.py
+arguments:
+- $( inputs.reference.value )
 requirements:
+  NetworkAccess:
+    networkAccess: true
+  SchemaDefRequirement:
+    types:
+    - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
+  DockerRequirement:
+    dockerPull: ghcr.io/eoap/mastering-app-package/stage:1.0.0
+  InlineJavascriptRequirement: {}
   InitialWorkDirRequirement:
     listing:
-    - entryname: stagein.sh
-      entry: |-
-        #!/bin/bash
-        export AWS__ServiceURL=$(inputs.ADES_STAGEIN_AWS_SERVICEURL)
-        export AWS_ACCESS_KEY_ID=$(inputs.ADES_STAGEIN_AWS_ACCESS_KEY_ID)
-        export AWS_SECRET_ACCESS_KEY=$(inputs.ADES_STAGEIN_AWS_SECRET_ACCESS_KEY)
-        Stars $@
-  EnvVarRequirement:
-    envDef:
-      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-  ResourceRequirement: {}
+      - entryname: stage.py
+        entry: |-
+          import pystac
+          import stac_asset
+          import asyncio
+          import os
+          import sys
+
+          config = stac_asset.Config(warn=True)
+
+          async def main(href: str):
+
+              item = pystac.read_file(href)
+
+              os.makedirs(item.id, exist_ok=True)
+              cwd = os.getcwd()
+
+              os.chdir(item.id)
+              item = await stac_asset.download_item(item=item, directory=".", config=config)
+              os.chdir(cwd)
+
+              cat = pystac.Catalog(
+                  id="catalog",
+                  description=f"catalog with staged {item.id}",
+                  title=f"catalog with staged {item.id}",
+              )
+              cat.add_item(item)
+
+              cat.normalize_hrefs("./")
+              cat.save(catalog_type=pystac.CatalogType.SELF_CONTAINED)
+
+              return cat
+
+          href = sys.argv[1]
+
+          cat = asyncio.run(main(href))
+

@@ -59,7 +59,7 @@ class TestSentinel2BurnedArea(unittest.TestCase):
                 # Add logic here for actions before execution, if needed
                 pass
 
-            def post_execution_hook(self):
+            def post_execution_hook(self, **kwargs):
                 # Add logic here for actions after execution, if needed
                 pass
             

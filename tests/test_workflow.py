@@ -4,7 +4,7 @@ import unittest
 import cwl_utils
 import yaml
 
-from zoo_calrissian_runner import Workflow
+from zoo_calrissian_runner import CWLWorkflow as Workflow
 
 # from dotenv import load_dotenv
 # load_dotenv()

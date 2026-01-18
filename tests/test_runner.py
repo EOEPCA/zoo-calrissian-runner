@@ -40,7 +40,7 @@ class TestRunnerResources(unittest.TestCase):
 
         conf = {}
         conf["lenv"] = {"message": ""}
-        conf["lenv"] = {"Identifier": "burned-area"}
+        conf["lenv"] = {"Identifier": "main"}
         conf["tmpPath"] = "/tmp"
 
         cls.conf = conf

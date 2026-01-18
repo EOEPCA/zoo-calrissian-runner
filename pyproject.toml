@@ -24,13 +24,14 @@ classifiers = [
 ]
 
 dependencies = [
+    "zoo-runner-common",
     "pycalrissian",
     "eoap_cwlwrap",
     "cwl-utils>=0.14",
     "attrs",
     "loguru",
     "setuptools",
-    "kubernetes==28.1.0",
+    "kubernetes>=34.1.0",
     "cwltool",
     "zoo-framework"
 ]
@@ -69,6 +70,7 @@ PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"
 [tool.hatch.envs.default]
 skip-install = false
 dependencies = [
+    "zoo-runner-common",
     "pycalrissian",
     "eoap_cwlwrap",
     "cwl-utils>=0.14",

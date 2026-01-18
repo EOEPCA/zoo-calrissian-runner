@@ -3,7 +3,7 @@ import unittest
 
 import yaml
 import os
-from cwl_utils.parser.cwl_v1_0 import Workflow
+from cwl_utils.parser.cwl_v1_2 import Workflow
 
 from zoo_calrissian_runner import ZooCalrissianRunner
 
