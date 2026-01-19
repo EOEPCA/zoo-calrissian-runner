@@ -25,6 +25,7 @@ classifiers = [
 
 dependencies = [
     "zoo-runner-common",
+    "zoo-template-common",
     "pycalrissian",
     "eoap_cwlwrap",
     "cwl-utils>=0.14",
