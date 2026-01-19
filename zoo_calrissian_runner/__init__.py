@@ -31,7 +31,7 @@ import os
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../zoo-runner-common')))
 from base_runner import BaseRunner
 from zoo_conf import ZooConf, ZooInputs, ZooOutputs, CWLWorkflow
-from handlers import ExecutionHandler
+from zoo_calrissian_runner.handlers import ExecutionHandler
 
 # useful class for hints in CWL
 @attr.s
@@ -53,157 +53,12 @@ class ResourceRequirement:
 try:
     import zoo
 except ImportError:
-
-    class ZooStub(object):
-        def __init__(self):
-            self.SERVICE_SUCCEEDED = 3
-            self.SERVICE_FAILED = 4
-
-        def update_status(self, conf, progress):
-            print(f"Status {progress}")
-
-        def _(self, message):
-            print(f"invoked _ with {message}")
-
+    # Use centralized ZooStub from zoo-runner-common package
+    from zoostub import ZooStub
     zoo = ZooStub()
 
 
-# Note: Workflow, ZooConf, ZooInputs, ZooOutputs are now imported from zoo-runner-common
-# The CWLWorkflow class in zoo_conf.py provides equivalent functionality to the Workflow class
-
-
-class ZooCalrissianRunner(BaseRunner):
-    def __init__(self, cwl, workflow_id):
-        self.raw_cwl = cwl
-        self.cwl = load_cwl(cwl)
-        self.workflow_id = workflow_id
-
-    def get_workflow(self) -> cwl_utils.parser.cwl_v1_0.Workflow:
-        # returns a cwl_utils.parser.cwl_v1_0.Workflow)
-        ids = [elem.id.split("#")[-1] for elem in self.cwl]
-
-        return self.cwl[ids.index(self.workflow_id)]
-
-    def get_object_by_id(self, id):
-        ids = [elem.id.split("#")[-1] for elem in self.cwl]
-        return self.cwl[ids.index(id)]
-
-
-    # Note: get_workflow_inputs() is now inherited from BaseRunner
-
-    @staticmethod
-    def has_scatter_requirement(workflow):
-        return any(
-            isinstance(
-                requirement,
-                (
-                    cwl_utils.parser.cwl_v1_0.ScatterFeatureRequirement,
-                    cwl_utils.parser.cwl_v1_1.ScatterFeatureRequirement,
-                    cwl_utils.parser.cwl_v1_2.ScatterFeatureRequirement,
-                ),
-            )
-            for requirement in workflow.requirements
-        )
-
-    @staticmethod
-    def get_resource_requirement(elem):
-        """Gets the ResourceRequirement out of a CommandLineTool or Workflow
-
-        Args:
-            elem (CommandLineTool or Workflow): CommandLineTool or Workflow
-
-        Returns:
-            cwl_utils.parser.cwl_v1_2.ResourceRequirement or ResourceRequirement
-        """
-        resource_requirement = []
-        
-        # look for requirements
-        if elem.requirements is not None:
-            resource_requirement = [
-                requirement
-                for requirement in elem.requirements
-                if isinstance(
-                    requirement,
-                    (
-                        cwl_utils.parser.cwl_v1_0.ResourceRequirement,
-                        cwl_utils.parser.cwl_v1_1.ResourceRequirement,
-                        cwl_utils.parser.cwl_v1_2.ResourceRequirement,
-                    ),
-                )
-            ]
-
-            if len(resource_requirement) == 1:
-                return resource_requirement[0]
-
-        # look for hints
-        if elem.hints is not None:
-            resource_requirement = [
-                ResourceRequirement.from_dict(hint)
-                for hint in elem.hints
-                if hint["class"] == "ResourceRequirement"
-            ]
-
-            if len(resource_requirement) == 1:
-                return resource_requirement[0]
-
-    def eval_resource(self):
-        resources = {
-            "coresMin": [],
-            "coresMax": [],
-            "ramMin": [],
-            "ramMax": [],
-            "tmpdirMin": [],
-            "tmpdirMax": [],
-            "outdirMin": [],
-            "outdirMax": [],
-        }
-
-        for elem in self.cwl:
-            if isinstance(
-                elem,
-                (
-                    cwl_utils.parser.cwl_v1_0.Workflow,
-                    cwl_utils.parser.cwl_v1_1.Workflow,
-                    cwl_utils.parser.cwl_v1_2.Workflow,
-                ),
-            ):
-                if resource_requirement := self.get_resource_requirement(elem):
-                    for resource_type in [
-                        "coresMin",
-                        "coresMax",
-                        "ramMin",
-                        "ramMax",
-                        "tmpdirMin",
-                        "tmpdirMax",
-                        "outdirMin",
-                        "outdirMax",
-                    ]:
-                        if getattr(resource_requirement, resource_type):
-                            resources[resource_type].append(getattr(resource_requirement, resource_type))
-                for step in elem.steps:
-                    if resource_requirement := self.get_resource_requirement(
-                        self.get_object_by_id(step.run[1:])
-                    ):
-                        multiplier = int(os.getenv("SCATTER_MULTIPLIER", 2)) if step.scatter else 1
-                        for resource_type in [
-                            "coresMin",
-                            "coresMax",
-                            "ramMin",
-                            "ramMax",
-                            "tmpdirMin",
-                            "tmpdirMax",
-                            "outdirMin",
-                            "outdirMax",
-                        ]:
-                            if getattr(resource_requirement, resource_type):
-                                resources[resource_type].append(
-                                    getattr(resource_requirement, resource_type) * multiplier
-                                )
-        return resources
-
-
-
-# Note: ZooConf, ZooInputs, ZooOutputs are now in zoo-runner-common
+# Note: ZooConf, ZooInputs, ZooOutputs, CWLWorkflow are now in zoo-runner-common
 
 class ZooCalrissianRunner(BaseRunner):
     def __init__(
