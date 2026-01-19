@@ -29,8 +29,8 @@ import os
 # Add zoo-runner-common to path (adjust based on installation)
 # import sys
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../zoo-runner-common')))
-from base_runner import BaseRunner
-from zoo_conf import ZooConf, ZooInputs, ZooOutputs, CWLWorkflow
+from zoo_runner_common.base_runner import BaseRunner
+from zoo_runner_common.zoo_conf import ZooConf, ZooInputs, ZooOutputs, CWLWorkflow
 from zoo_calrissian_runner.handlers import ExecutionHandler
 
 # useful class for hints in CWL

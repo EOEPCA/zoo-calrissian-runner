@@ -8,7 +8,7 @@ import os
 
 # Add zoo-runner-common to path
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../zoo-runner-common')))
-from handlers import ExecutionHandler as BaseExecutionHandler
+from zoo_runner_common.handlers import ExecutionHandler as BaseExecutionHandler
 
 
 class ExecutionHandler(BaseExecutionHandler):
